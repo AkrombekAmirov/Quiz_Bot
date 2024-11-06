@@ -1,4 +1,5 @@
 from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.ext.asyncio import create_async_engine
 from sqlalchemy import create_engine
 from dotenv import load_dotenv
 from os import environ
@@ -11,5 +12,5 @@ BOT_TOKEN = environ.get("BOT_TOKEN")  # Bot toekn
 ADMINS = environ.get("ADMINS")  # adminlar ro'yxati
 IP = environ.get("ip")  # Xosting ip manzili
 
-engine = create_engine(environ.get("DATABASE_URL"))
+engine = create_async_engine(environ.get("DATABASE_URL"), echo=True, future=True)
 Base = declarative_base()

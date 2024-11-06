@@ -45,7 +45,6 @@ async def start_test(call: types.CallbackQuery, state: FSMContext):
     if sub is not None:
         # Test natijasi mavjudligini tekshirish
         result = await db.get_result(user_id=user_id, subject_id=sub.id)
-        print(result)
 
         if result and result.status:
             # Test davom ettiriladi

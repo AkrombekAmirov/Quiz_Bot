@@ -11,7 +11,7 @@ for_user = InlineKeyboardMarkup(
 admin_menu = InlineKeyboardMarkup(
     inline_keyboard=[
         [
-            InlineKeyboardButton(text="Test qushish", callback_data="admin_add_test")
+            InlineKeyboardButton(text="Yo'nalish qushish", callback_data="admin_add_department")
         ],
         [
             InlineKeyboardButton(text="Yangi test qo'shish", callback_data="admin_add_test")

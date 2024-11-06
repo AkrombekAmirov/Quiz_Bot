@@ -1,6 +1,8 @@
 from keyboards import admin_menu, yonalish_nomi_keyboard, list_faculty, faculty_file_map2
+from sqlalchemy.util import await_only
+
 from file_service import join_file, read_file, get_path
-from utils.db_api.core import QuizDatabase
+from utils.db_api.core import QuizDatabase, Subject
 from aiogram.dispatcher import FSMContext
 from aiogram import types
 from states import User
@@ -38,9 +40,7 @@ async def handle_file(message: types.Message, state: FSMContext):
         await join_file(file_name=message.document.file_name)
     )
     await message.answer("Fayl saqlandi!")
-    if await read_file(file_path=message.document.file_name, subject_id=int(subject_id.subject_val)):
-        await message.answer("Testlar bazasiga qo'shildi", reply_markup=admin_menu)
-        await state.reset_state(with_data=False)
+    if not await read_file(file_path=message.document.file_name, subject_id=int(subject_id.subject_val)):
+        await message.answer("Bu fayl bazasida mavjud")
     else:
-        await message.answer("Qayta urinib ko'ring!", reply_markup=list_faculty)
-        await User.zero.set()
+        await message.answer("Testlar bazasiga qo'shildi")
