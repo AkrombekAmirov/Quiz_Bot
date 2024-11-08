@@ -13,6 +13,7 @@ async def read_file(file_path: str, subject_id: int):
             print("Malumot bazasida savol mavjud")
             return None
         else:
+            print("Malumot bazasida savol mavjud emas")
             for row in sheet.iter_rows(values_only=True):
                 await db.add_question(subject_id=subject_id, question=row[1], option1=row[2], option2=row[3], option3=row[4],
                                       option4=row[5])

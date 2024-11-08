@@ -38,9 +38,9 @@ async def handle_file(message: types.Message, state: FSMContext):
         await join_file(file_name=message.document.file_name)
     )
     await message.answer("Fayl saqlandi!")
-    if await read_file(file_path=message.document.file_name, subject_id=int(subject_id.subject_val)):
+    if not await read_file(file_path=message.document.file_name, subject_id=int(subject_id.subject_val)):
         await message.answer("Testlar bazasiga qo'shildi", reply_markup=admin_menu)
         await state.reset_state(with_data=False)
-    else:
-        await message.answer("Qayta urinib ko'ring!", reply_markup=list_faculty)
-        await User.zero.set()
+    # else:
+    #     await message.answer("Qayta urinib ko'ring!", reply_markup=list_faculty)
+    #     await User.zero.set()

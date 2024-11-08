@@ -46,7 +46,7 @@ class QuizDatabase:
             async with AsyncSession(self.engine) as session:
                 try:
                     async with session.begin():
-                        session.merge(instance)
+                        await session.merge(instance)
                     await session.refresh(instance)
                     logging.info(f"Updated: {instance}")
                     return instance.id
@@ -58,6 +58,22 @@ class QuizDatabase:
                     logging.error(f"Error updating instance: {e}")
                     break
         return None
+
+    async def update_user(self, user_id: int, updates: dict):
+        """Update user information based on a dictionary of updates."""
+        async with AsyncSession(self.engine) as session:
+            user = await session.get(User, user_id)
+            if user:
+                # Diktan yangilanishlarni qo'llash
+                for key, value in updates.items():
+                    if value is not None:
+                        setattr(user, key, value)
+
+                # Foydalanuvchining yangilangan versiyasini bazaga saqlash
+                return await self._update(user)
+            else:
+                logging.error(f"User with id {user_id} not found")
+                return None
 
     async def add_user(self, user_id: int, name: str, username: str, phone_number: Optional[str] = None):
         return await self._add(User(user_id=user_id, name=name, username=username, phone_number=phone_number))
@@ -198,6 +214,10 @@ class QuizDatabase:
         """
         result = await self.get(model=Result, filter_by={"id": result_id}, limit=1)
         return result[0] if result else None
+
+    async def get_active_result(self, user_id: int):
+        return await self.get(model=Result, filter_by={"user_id": user_id, "status": True}, limit=1)
+
     async def get_result(self, user_id: int, subject_id: int):
         """
                 Ma'lum `user_id` va `subject_id` bo'yicha `Result` jadvalidan yozuvni olish funksiyasi.

@@ -10,6 +10,7 @@ load_dotenv()
 DATABASE_URL = environ.get("DATABASE_URL")  # PostgreSQL
 BOT_TOKEN = environ.get("BOT_TOKEN")  # Bot toekn
 ADMINS = environ.get("ADMINS")  # adminlar ro'yxati
+ADMIN_1 = environ.get("ADMIN_1")  # birinchi admin
 IP = environ.get("ip")  # Xosting ip manzili
 
 engine = create_async_engine(environ.get("DATABASE_URL"), echo=True, future=True)

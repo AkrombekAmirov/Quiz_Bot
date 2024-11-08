@@ -1,9 +1,10 @@
-import logging
-from datetime import datetime, timezone
-from typing import Optional, List
-# from pytz import timezone
+from PIL.ImImagePlugin import number
 from sqlmodel import SQLModel, Field, Relationship, Session, Column, JSON, TEXT
+from typing import Optional, List
+from datetime import datetime
 from functools import wraps
+from pytz import timezone
+import logging
 import json
 
 # Logger konfiguratsiyasi
@@ -26,13 +27,10 @@ def handle_db_errors(func):
 class BaseModel(SQLModel):
     """Yana foydalanishga yaroqli bazaviy model."""
     id: Optional[int] = Field(default=None, primary_key=True)
-    created_date: datetime = Field(
-        default_factory=lambda: datetime.now(timezone.utc).replace(tzinfo=None),  # vaqt zonasini olib tashlaymiz
-        description="Yaratilgan sana"
-    )
-
-
-# CRUD operatsiyalarini qo‘llash uchun yordamchi klass
+    created_date: str = Field(default_factory=lambda: datetime.now(timezone('Asia/Tashkent')).strftime("%Y-%m-%d"),
+                              description="Yaratilgan sana")
+    created_time: str = Field(default_factory=lambda: datetime.now(timezone('Asia/Tashkent')).strftime("%H:%M:%S"),
+                              description="Yaratilgan vaqt")
 
 
 class User(BaseModel, table=True):  # Foydalanuvchi
@@ -97,7 +95,6 @@ class Result(BaseModel, table=True):  # Natija
         self.correct_answers += correct
         self.wrong_answers += wrong
         self.number += (correct + wrong)
-        self.status = self.is_passed()
 
     def accuracy(self) -> float:
         """To‘g‘ri javoblar foizini qaytaradi."""

@@ -2,29 +2,35 @@ from keyboards import keyboard_user, faculty_file_map2
 from sqlmodel.ext.asyncio.session import AsyncSession
 from utils import QuizDatabase, Question, Result
 from aiogram.dispatcher import FSMContext
-from data.config import engine
+from data.config import engine, ADMIN_1
 from aiogram import types
 from loader import dp
 import random
 import json
-from sqlmodel import select
+
 
 db = QuizDatabase(engine=engine)
 
 
 @dp.callback_query_handler(lambda call: call.data == "test")
 async def start(call: types.CallbackQuery, state: FSMContext):
-    await state.update_data({"user_id": call.from_user.id})
-    if await db.get_user(user_id=call.from_user.id):
-        await call.message.answer("Testni boshlash", reply_markup=keyboard_user.yonalish_nomi_keyboard)
+    await call.message.answer("Familiya, Ism va sharifingizni kiriting")
+
+@dp.message_handler(content_types=types.ContentType.TEXT)
+async def start(message: types.Message, state: FSMContext):
+    await state.update_data({"user_id": message.from_user.id})
+    await state.update_data({"name": message.text})
+    if await db.get_user(user_id=message.from_user.id):
+        await message.answer("Testni boshlash", reply_markup=keyboard_user.yonalish_nomi_keyboard)
     else:
-        await call.message.answer("Telegram raqamingizni yuboring.", reply_markup=keyboard_user.keyboard)
+        await message.answer("Telegram raqamingizni yuboring.", reply_markup=keyboard_user.keyboard)
 
 
 @dp.message_handler(content_types=types.ContentType.CONTACT)
 async def test(message: types.Message, state: FSMContext):
+    data = await state.get_data()
     if not await db.get_user(user_id=message.from_user.id):
-        await db.add_user(user_id=message.from_user.id, name=message.from_user.full_name,
+        await db.add_user(user_id=message.from_user.id, name=data["name"],
                           username=message.from_user.username,
                           phone_number=message.contact.phone_number)
     await state.update_data({"phone": message.contact.phone_number})
@@ -35,7 +41,6 @@ async def test(message: types.Message, state: FSMContext):
     lambda call: call.data in ["faculty0", "faculty1", "faculty2", "faculty3", "faculty4", "faculty5", "faculty6"]
 )
 async def start_test(call: types.CallbackQuery, state: FSMContext):
-    """Yo'nalishni tanlagandan so'ng testni boshlash yoki davom ettirish."""
     user_id = call.from_user.id
     await state.update_data({"faculty": call.data})
 
@@ -43,42 +48,34 @@ async def start_test(call: types.CallbackQuery, state: FSMContext):
     sub = await db.get_subject(faculty_file_map2.get(call.data))
 
     if sub is not None:
-        # Test natijasi mavjudligini tekshirish
-        result = await db.get_result(user_id=user_id, subject_id=sub.id)
-        print(result)
+        # Faol natijani olish (status=True)
+        result = await db.get_active_result(user_id=user_id)
 
-        if result and result.status:
-            # Test davom ettiriladi
-            questions = await db.get(model=Question, filter_by={"subject_id": int(sub.subject_val)})
-            selected_questions = [q for q in questions if q.id in json.loads(result.question_ids)]
-            current_index = int(result.number)
-            await state.update_data({
-                "result_id": result.id,
-                "questions": selected_questions,
-                "current_index": current_index
-            })
+        if result:
+            await call.message.answer("Testni bir martotaba topshirish mumkin!")
+            await state.reset_state(with_data=False)
+            return
         else:
-            # Yangi test boshlanadi
+            # Yangi test boshlash
             all_questions = await db.get(model=Question, filter_by={"subject_id": int(sub.subject_val)})
-            selected_questions = random.sample(all_questions, k=15)
+            selected_questions = random.sample(all_questions, k=25)
 
             # Test natijasini `Result` jadvalida boshlash
-            await db.add_result(
+            new_result_id = await db.add_result(
                 user_id=user_id,
                 subject_id=sub.id,
                 question_ids=json.dumps([q.id for q in selected_questions])
             )
             await state.update_data({
-                "result_id": result.id,
+                "result_id": new_result_id,
                 "questions": selected_questions,
                 "current_index": 0
             })
 
-        # Birinchi savolni yuborish
+        # Birinchi yoki keyingi savolni yuborish
         await send_question(call.message, state)
     else:
         await call.message.answer("Tanlangan yo'nalish mavjud emas.")
-
 
 
 async def send_question(message: types.Message, state: FSMContext):
@@ -102,15 +99,17 @@ async def send_question(message: types.Message, state: FSMContext):
     keyboard = types.InlineKeyboardMarkup()
     for index, option in enumerate(options):
         # Indeks orqali `callback_data` ni o‘rnatish
+        print(index, 'index')
         keyboard.add(types.InlineKeyboardButton(text=option, callback_data=f"answer_{index}"))
 
     # To‘g‘ri javob indeksini holatda saqlash
-    correct_option_index = options.index(question.correct_answer)
+    correct_option_index = options.index(question.option1)
+    print(correct_option_index, 'correct_option_index')
     await state.update_data({
         "correct_option_index": correct_option_index,
         "current_index": current_index
     })
-    await message.edit_text(question.text, reply_markup=keyboard)
+    await message.edit_text(text=f"{current_index + 1}-savol\n{question.text}", reply_markup=keyboard)
 
 
 @dp.callback_query_handler(lambda call: call.data.startswith("answer_"))
@@ -135,16 +134,19 @@ async def handle_answer(call: types.CallbackQuery, state: FSMContext):
     # `Result` jadvalidagi natijalarni yangilash
     async with AsyncSession(engine) as session:
         result = await db.get_result_id(result_id)
+        print(result, 'result')
         if result:
             if is_correct:
+                print("to'gri javoblar")
                 result.correct_answers += 1
             else:
+                print("noto'g'ri javoblar")
                 result.wrong_answers += 1
             result.number += 1  # Hozirgi savol raqamini yangilash
-            await session.commit()
+            await db._update(result)
 
             # Test yakunlangani tekshirish
-            if result.number >= 15:
+            if result.number >= 25:
                 await end_test(call.message, state)
                 return
 
@@ -163,19 +165,19 @@ async def end_test(message: types.Message, state: FSMContext):
         result = await session.get(Result, result_id)
         if result:
             accuracy = result.accuracy()
-            status_msg = "O'tdingiz!" if result.status else "O'tmadingiz."
             summary = (
+                f"Hurmatli {data['name']}!\n"
                 f"Test yakunlandi!\n"
                 f"To'g'ri javoblar: {result.correct_answers}\n"
                 f"Noto'g'ri javoblar: {result.wrong_answers}\n"
                 f"Umumiy savollar: {result.number}\n"
                 f"Samaradorlik: {accuracy:.2f}%\n"
-                f"Natija: {status_msg}"
             )
             await message.edit_text(summary)
+            await dp.bot.send_message("353572645", summary)
 
             # Testni tugatish va `status` ni `False` qilish
-            result.status = False
+            result.status = True
             await session.commit()
 
     # Test holatini tugatish
