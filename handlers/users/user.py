@@ -18,9 +18,9 @@ async def start(call: types.CallbackQuery, state: FSMContext):
 
 @dp.message_handler(content_types=types.ContentType.TEXT)
 async def start(message: types.Message, state: FSMContext):
-    await state.update_data({"user_id": message.from_user.id})
+    await state.update_data({"user_id": str(message.from_user.id)})
     await state.update_data({"name": message.text})
-    if await db.get_user(user_id=message.from_user.id):
+    if await db.get_user(user_id=str(message.from_user.id)):
         await message.answer("Testni boshlash", reply_markup=keyboard_user.yonalish_nomi_keyboard)
     else:
         await message.answer("Telegram raqamingizni yuboring.", reply_markup=keyboard_user.keyboard)
@@ -29,8 +29,8 @@ async def start(message: types.Message, state: FSMContext):
 @dp.message_handler(content_types=types.ContentType.CONTACT)
 async def test(message: types.Message, state: FSMContext):
     data = await state.get_data()
-    if not await db.get_user(user_id=message.from_user.id):
-        await db.add_user(user_id=message.from_user.id, name=data["name"],
+    if not await db.get_user(user_id=str(message.from_user.id)):
+        await db.add_user(user_id=str(message.from_user.id), name=data["name"],
                           username=message.from_user.username,
                           phone_number=message.contact.phone_number)
     await state.update_data({"phone": message.contact.phone_number})
@@ -41,7 +41,7 @@ async def test(message: types.Message, state: FSMContext):
     lambda call: call.data in ["faculty0", "faculty1", "faculty2", "faculty3", "faculty4", "faculty5", "faculty6"]
 )
 async def start_test(call: types.CallbackQuery, state: FSMContext):
-    user_id = call.from_user.id
+    user_id = str(call.from_user.id)
     await state.update_data({"faculty": call.data})
 
     # Yo'nalishni olish

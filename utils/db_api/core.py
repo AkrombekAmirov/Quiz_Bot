@@ -59,7 +59,7 @@ class QuizDatabase:
                     break
         return None
 
-    async def update_user(self, user_id: int, updates: dict):
+    async def update_user(self, user_id: str, updates: dict):
         """Update user information based on a dictionary of updates."""
         async with AsyncSession(self.engine) as session:
             user = await session.get(User, user_id)
@@ -75,7 +75,7 @@ class QuizDatabase:
                 logging.error(f"User with id {user_id} not found")
                 return None
 
-    async def add_user(self, user_id: int, name: str, username: str, phone_number: Optional[str] = None):
+    async def add_user(self, user_id: str, name: str, username: str, phone_number: Optional[str] = None):
         return await self._add(User(user_id=user_id, name=name, username=username, phone_number=phone_number))
 
     async def add_subject(self, name: str, subject_val: int):
@@ -87,7 +87,7 @@ class QuizDatabase:
             Question(subject_id=subject_id, text=question, option1=option1, option2=option2, option3=option3,
                      option4=option4, correct_answer=option1))
 
-    async def add_result(self, user_id: int, subject_id: int, question_ids):
+    async def add_result(self, user_id: str, subject_id: int, question_ids):
         """
         Result jadvaliga yangi yozuv qo‘shadi. Savol IDlari JSON formatida saqlanadi.
 
@@ -105,7 +105,7 @@ class QuizDatabase:
             status=True
         ))
 
-    async def get_user(self, user_id: int) -> Optional[User]:
+    async def get_user(self, user_id: str) -> Optional[User]:
         async with AsyncSession(self.engine) as session:
             try:
                 statement = select(User).where(User.user_id == user_id)
@@ -215,7 +215,7 @@ class QuizDatabase:
         result = await self.get(model=Result, filter_by={"id": result_id}, limit=1)
         return result[0] if result else None
 
-    async def get_active_result(self, user_id: int):
+    async def get_active_result(self, user_id: str):
         return await self.get(model=Result, filter_by={"user_id": user_id, "status": True}, limit=1)
 
     async def get_result(self, user_id: int, subject_id: int):
@@ -228,7 +228,7 @@ class QuizDatabase:
                 """
         return await self.get(model=Result, filter_by={"user_id": user_id, "subject_id": subject_id}, limit=1)
 
-    async def user_update_test_id(self, user_id: int, test_id: str):
+    async def user_update_test_id(self, user_id: str, test_id: str):
         async with AsyncSession(self.engine) as session:
             try:
                 statement = select(User).where(User.user_id == user_id)

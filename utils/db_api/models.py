@@ -35,38 +35,38 @@ class BaseModel(SQLModel):
 
 class User(BaseModel, table=True):  # Foydalanuvchi
     __tablename__ = 'users'
-    user_id: int = Field(..., unique=True, description="Foydalanuvchi ID")
+    user_id: str = Field(..., unique=True, description="Foydalanuvchi ID")
     name: str = Field(..., description="Foydalanuvchi ismi")
     username: str = Field(..., description="Foydalanuvchi nomi")
     phone_number: Optional[str] = Field(default=None, description="Telefon raqami")
-    results: List["Result"] = Relationship(back_populates="user")
+    # results: List["Result"] = Relationship(back_populates="user")
 
 
 class Subject(BaseModel, table=True):  # Fan
     __tablename__ = 'subjects'
     name: str = Field(..., description="Fan nomi")
     subject_val: str = Field(..., description="Fan qiymati")
-    questions: List["Question"] = Relationship(
-        back_populates="subject")  # `questions` bilan `back_populates` o'rnatildi
-    results: List["Result"] = Relationship(back_populates="subject")  # `results` bilan `back_populates` o'rnatildi
+    # questions: List["Question"] = Relationship(
+    #     back_populates="subject")  # `questions` bilan `back_populates` o'rnatildi
+    # results: List["Result"] = Relationship(back_populates="subject")  # `results` bilan `back_populates` o'rnatildi
 
 
 class Question(BaseModel, table=True):  # Savol
     __tablename__ = 'questions'
-    subject_id: int = Field(..., foreign_key="subjects.id", description="Fan ID")
+    subject_id: int = Field(..., description="Fan ID")
     text: str = Field(..., description="Savol matni")
     option1: str = Field(..., description="Javob variantlari")
     option2: str = Field(..., description="Javob variantlari")
     option3: str = Field(..., description="Javob variantlari")
     option4: str = Field(..., description="Javob variantlari")
     correct_answer: str = Field(..., description="To'g'ri javob")
-    subject: Optional["Subject"] = Relationship(back_populates="questions")  # `subject` bilan `Relationship` o'rnatildi
+    # subject: Optional["Subject"] = Relationship(back_populates="questions")  # `subject` bilan `Relationship` o'rnatildi
 
 
 class Result(BaseModel, table=True):  # Natija
     __tablename__ = 'results'
-    user_id: int = Field(..., foreign_key="users.user_id", description="Foydalanuvchi ID")
-    subject_id: int = Field(..., foreign_key="subjects.id", description="Fan ID")
+    user_id: str = Field(..., description="Foydalanuvchi ID")
+    subject_id: int = Field(..., description="Fan ID")
     question_ids: str = Field(sa_column=Column(TEXT), description="Savol ID larining ro'yxati JSON formatida")
     correct_answers: int = Field(default=0, description="To'g'ri javoblar soni")
     wrong_answers: int = Field(default=0, description="Noto'g'ri javoblar soni")
@@ -74,8 +74,8 @@ class Result(BaseModel, table=True):  # Natija
     status: bool = Field(default=False, description="Test holati")
 
     # Foydalanuvchi va Fan bilan bog'lanish
-    user: Optional["User"] = Relationship(back_populates="results")  # `results` bilan o'rnatildi
-    subject: Optional["Subject"] = Relationship(back_populates="results")
+    # user: Optional["User"] = Relationship(back_populates="results")  # `results` bilan o'rnatildi
+    # subject: Optional["Subject"] = Relationship(back_populates="results")
 
     class Config:
         from_attributes = True
