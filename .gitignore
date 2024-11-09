@@ -4,7 +4,7 @@ __pycache__/
 *$py.class
 alembic.ini
 alembic
-.idea
+.idea/dataSources.local.xml
 
 # C extensions
 *.so
